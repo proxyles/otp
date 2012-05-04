@@ -462,6 +462,53 @@ archive_script(Config) when is_list(Config) ->
 		"priv:{ok,<<\"Some private data...\\n\">>}\n"
 		"ExitCode:0">>]),
 
+    %%%%%%%
+    %% Create and run archive script with a special zip archive which
+    %% used to provoke the following issues when the script was run as
+    %% "./archive_script":
+    %% 1. erl_prim_loader:read_file_info/1 returning 'error'
+    %% 2. erl_prim_loader:list_dir/1 returning {ok, ["dir1", [], "file1"]}
+    %%    leading to an infinite loop in reltool_target:spec_dir/1
+
+    %% Generate dummy file in a subdir for zip archive
+    {ok, OldDir} = file:get_cwd(),
+    ok = file:set_cwd(TopDir),
+    SpecialDummySubDir = filename:join("dir1", "subdir1"),
+    SpecialDummyFile = filename:join([TopDir, SpecialDummySubDir, "file1"]),
+    ok = filelib:ensure_dir(SpecialDummyFile),
+    ok = file:write_file(SpecialDummyFile, ["foo\nbar\nbaz"]),
+
+    %% Create special zip archive
+    LoadFiles =
+	fun(Wildcard, Dir) ->
+		[begin
+		     {ok, Bin} = file:read_file(filename:join(Dir, Filename)),
+		     {Filename, Bin}
+		 end || Filename <- filelib:wildcard(Wildcard, Dir)]
+	end,
+    SpecialMain = "archive_script_main3",
+    SpecialFiles = LoadFiles(SpecialMain ++ ".beam", ".")
+	++ LoadFiles(filename:join([SpecialDummySubDir, "*"]), "."),
+    ok = file:set_cwd(OldDir),
+    {ok, {"mem", SpecialBin}} = zip:create("mem", SpecialFiles, [memory]),
+
+    SpecialBase = "archive_script_special",
+    SpecialScript = filename:join([PrivDir, SpecialBase]),
+    SpecialFlags = "%%! -escript main " ++ SpecialMain,
+    ok = file:write_file(SpecialScript,
+			 [Shebang, "\n",
+			  SpecialFlags, "\n",
+			  SpecialBin]),
+    ok = file:write_file_info(SpecialScript, OrigFI),
+
+    %% Change to script's directory and run "./archive_script_special"
+    ok = file:set_cwd(PrivDir),
+    do_run(PrivDir, "./" ++ SpecialBase,
+	   [<<"main3:[]\n",
+	      "false\n"
+	      "ExitCode:0">>]),
+    ok = file:set_cwd(OldDir),
+
     ok.
 
 compile_app(TopDir, AppName) ->
