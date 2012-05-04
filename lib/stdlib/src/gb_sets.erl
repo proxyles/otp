@@ -749,12 +749,6 @@ is_disjoint_1(nil, _) ->
 is_disjoint_1(_, nil) ->
     true.
 
-%% Note that difference is not symmetric. We don't use `delete' here,
-%% since the GB-trees implementation does not rebalance after deletion
-%% and so we could end up with very unbalanced trees indeed depending on
-%% the sets. Therefore, we always build a new tree, and thus we need to
-%% traverse the whole element list of the left operand.
-
 -spec subtract(Set1, Set2) -> Set3 when
       Set1 :: gb_set(),
       Set2 :: gb_set(),
@@ -768,91 +762,18 @@ subtract(S1, S2) ->
       Set2 :: gb_set(),
       Set3 :: gb_set().
 
-difference({N1, T1}, {N2, T2}) ->
-    difference(to_list_1(T1), N1, T2, N2).
+difference(S1, S2) ->
+    fold(fun delete_any/2, S1, S2).
 
-difference(L, N1, T2, N2) when N2 < 10 ->
-    difference_2(L, to_list_1(T2), N1);
-difference(L, N1, T2, N2) ->
-    X = N1 * round(?c * math:log(N2)),
-    if N2 < X ->
-	    difference_2(L, to_list_1(T2), N1);
-       true ->
-	    difference_1(L, T2)
-    end.
-
-
-difference_1(Xs, T) ->
-    difference_1(Xs, T, [], 0).
-
-difference_1([X | Xs], T, As, N) ->
-    case is_member_1(X, T) of
-	true ->
-	    difference_1(Xs, T, As, N);
-	false ->
-	    difference_1(Xs, T, [X | As], N + 1)
-    end;
-difference_1([], _, As, N) ->
-    {N, balance_revlist(As, N)}.
-
-
-difference_2(Xs, Ys, S) ->
-    difference_2(Xs, Ys, [], S).    % S is the size of the left set
-
-difference_2([X | Xs1], [Y | _] = Ys, As, S) when X < Y ->
-    difference_2(Xs1, Ys, [X | As], S);
-difference_2([X | _] = Xs, [Y | Ys1], As, S) when X > Y ->
-    difference_2(Xs, Ys1, As, S);
-difference_2([_X | Xs1], [_Y | Ys1], As, S) ->
-    difference_2(Xs1, Ys1, As, S - 1);
-difference_2([], _Ys, As, S) ->
-    {S, balance_revlist(As, S)};
-difference_2(Xs, [], As, S) ->
-    {S, balance_revlist(push(Xs, As), S)}.
-
-
-%% Subset testing is much the same thing as set difference, but
-%% without the construction of a new set.
 
 -spec is_subset(Set1, Set2) -> boolean() when
       Set1 :: gb_set(),
       Set2 :: gb_set().
 
-is_subset({N1, T1}, {N2, T2}) ->
-    is_subset(to_list_1(T1), N1, T2, N2).
-
-is_subset(L, _N1, T2, N2) when N2 < 10 ->
-    is_subset_2(L, to_list_1(T2));
-is_subset(L, N1, T2, N2) ->
-    X = N1 * round(?c * math:log(N2)),
-    if N2 < X ->
-	    is_subset_2(L, to_list_1(T2));
-       true ->
-	    is_subset_1(L, T2)
-    end.
-
-
-is_subset_1([X | Xs], T) ->
-    case is_member_1(X, T) of
-	true ->
-	    is_subset_1(Xs, T);
-	false ->
-	    false
-    end;
-is_subset_1([], _) ->
-    true.
-
-
-is_subset_2([X | _], [Y | _]) when X < Y ->
+is_subset({S1, _}, {S2, _}) when S1 > S2 ->
     false;
-is_subset_2([X | _] = Xs, [Y | Ys1]) when X > Y ->
-    is_subset_2(Xs, Ys1);
-is_subset_2([_ | Xs1], [_ | Ys1]) ->
-    is_subset_2(Xs1, Ys1);
-is_subset_2([], _) ->
-    true;
-is_subset_2(_, []) ->
-    false.
+is_subset(S1, S2) ->
+    fold(fun (X, B) -> B andalso is_member(X, S2) end, true, S1).
 
 
 %% For compatibility with `sets':
