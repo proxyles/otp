@@ -25,6 +25,7 @@
 %% 	abs/1
 %%	float/1
 %%	float_to_list/1
+%%  float_to_list/2
 %%	integer_to_list/1
 %%	list_to_float/1
 %%	list_to_integer/1
@@ -114,7 +115,7 @@ t_float(Config) when is_list(Config) ->
     ok.
 
 
-%% Tests float_to_list/1.
+%% Tests float_to_list/1, float_to_list/2.
 
 t_float_to_list(Config) when is_list(Config) ->
     ?line test_ftl("0.0e+0", 0.0),
@@ -122,6 +123,16 @@ t_float_to_list(Config) when is_list(Config) ->
     ?line test_ftl("2.5e+0", 2.5),
     ?line test_ftl("2.5e-1", 0.25),
     ?line test_ftl("-3.5e+17", -350.0e15),
+    ?line "1.000000"  = float_to_list(1.0,   []),
+    ?line "1.0"       = float_to_list(1.0,   [compact]),
+    ?line "-1.000000" = float_to_list(-1.0,  []),
+    ?line "1.12"      = float_to_list(1.123, [{decimals, 2}]),
+    ?line "1.123"     = float_to_list(1.123, [{decimals, 3}]),
+    ?line "1.1230"    = float_to_list(1.123, [{decimals, 4}]),
+    ?line "1.12300"   = float_to_list(1.123, [{decimals, 5}]),
+    ?line "1.123"     = float_to_list(1.123, [{decimals, 5}, compact]),
+    ?line "0.0"       = float_to_list(0.0,   [compact]),
+    ?line "123000000000000000000.0" = float_to_list(1.23e20, [compact]),
     ok.
     
 test_ftl(Expect, Float) ->

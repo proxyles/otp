@@ -143,6 +143,7 @@ atom close
 atom closed
 atom code
 atom command
+atom compact
 atom compat_rel
 atom compile
 atom compressed
@@ -420,6 +421,7 @@ atom pid
 atom port
 atom ports
 atom port_count
+atom decimals
 atom print
 atom priority
 atom private
