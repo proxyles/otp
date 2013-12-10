@@ -4032,10 +4032,11 @@ case "$erl_xcomp_without_sysroot-$with_ssl" in
     fi
 
 
-    AC_MSG_CHECKING(for OpenSSL >= 0.9.7 in standard locations)
     for rdir in $extra_dir $std_win_ssl_locations $std_ssl_locations; do
 	dir="$erl_xcomp_sysroot$rdir"
+        AC_MSG_CHECKING(for OpenSSL >= 0.9.7 in $erl_xcomp_isysroot$rdir)
 	if test -f "$erl_xcomp_isysroot$rdir/include/openssl/opensslv.h"; then
+                AC_MSG_RESULT([yes, $erl_xcomp_isysroot$rdir/include/openssl/opensslv.h])
 		is_real_ssl=yes
 		SSL_ROOT="$dir"
 		if test "x$MIXED_CYGWIN" = "xyes" -o "x$MIXED_MSYS" = "xyes"; then
@@ -4100,6 +4101,7 @@ case "$erl_xcomp_without_sysroot-$with_ssl" in
 			SSL_INCLUDE="-I$dir/include"
 			old_CPPFLAGS=$CPPFLAGS
 			CPPFLAGS=$SSL_INCLUDE
+                        AC_MSG_CHECKING(for OpenSSL version of $SSL_INCLUDE)
 			AC_EGREP_CPP(yes,[
 #include <openssl/opensslv.h>
 #if OPENSSL_VERSION_NUMBER >= 0x0090700fL
@@ -4111,6 +4113,7 @@ case "$erl_xcomp_without_sysroot-$with_ssl" in
 			SSL_APP=
 			ssl_found=no
          		])
+                        AC_MSG_RESULT($ssl_found)
          		CPPFLAGS=$old_CPPFLAGS
 			if test "x$ssl_found" = "xyes"; then
 			   	if test "x$MIXED_CYGWIN" = "xyes" -o "x$MIXED_MSYS" = "xyes"; then
@@ -4122,6 +4125,7 @@ case "$erl_xcomp_without_sysroot-$with_ssl" in
  					CFLAGS="$CFLAGS $SSL_INCLUDE"
  					LDFLAGS="$LDFLAGS -L$SSL_LIBDIR"
 					LIBS="-lcrypto"
+                                        AC_MSG_CHECKING(for OpenSSL linkable of $SSL_INCLUDE -L$SSL_LIBDIR)
  					AC_TRY_LINK([
 					#include <stdio.h>
  					#include <openssl/hmac.h>],
@@ -4131,16 +4135,20 @@ case "$erl_xcomp_without_sysroot-$with_ssl" in
  					],
  					[ssl_linkable=yes],
  					[ssl_linkable=no])
+                                        AC_MSG_RESULT($ssl_linkable)
  					CFLAGS="$saveCFLAGS"
  					LDFLAGS="$saveLDFLAGS"
 					LIBS="$saveLIBS"
 				fi
  			fi
 	 		if test "x$ssl_found" = "xyes" && test "x$ssl_linkable" = "xyes"; then
+                                AC_MSG_CHECKING(for OpenSSL >= 0.9.7 in standard locations)
 			 	AC_MSG_RESULT([$dir])
 	   			break;
          		fi
 		fi	
+       else
+                AC_MSG_RESULT(no)
        fi
     done
 
