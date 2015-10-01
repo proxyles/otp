@@ -18,6 +18,7 @@ addons:
       - libpng3
       - default-jdk
       - g++
+      - xsltproc
 
 before_script:
   - set -e
