@@ -30,7 +30,7 @@ before_script:
 script:
   - ./otp_build all -a
   
-after_success
+after_success:
   - ./otp_build tests
 
 after_script:
